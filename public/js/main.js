@@ -1,4 +1,5 @@
 import { COLORS, ENERGY_TYPES, ENERGY_LABELS, CHART_CONFIG } from './constants.js';
+import LineChart from './line_chart.js';
 
 class EnergyVisualization {
     constructor(container) {
@@ -20,28 +21,28 @@ class EnergyVisualization {
     }
 
     initSVG() {
-    // 設置圖表尺寸
-    this.width = 1000;
-    this.height = 600;
-    this.margin = CHART_CONFIG.margin;
-    this.innerWidth = this.width - this.margin.left - this.margin.right;
-    this.innerHeight = this.height - this.margin.top - this.margin.bottom;
+        // 設置圖表尺寸
+        this.width = 1000;
+        this.height = 600;
+        this.margin = CHART_CONFIG.margin;
+        this.innerWidth = this.width - this.margin.left - this.margin.right;
+        this.innerHeight = this.height - this.margin.top - this.margin.bottom;
 
-    // 建立 SVG
-    this.svg = d3.select('#chart-area')
-        .append('svg')
-        .attr('width', this.width)
-        .attr('height', this.height);
+        // 建立 SVG
+        this.svg = d3.select('#chart-area')
+            .append('svg')
+            .attr('width', this.width)
+            .attr('height', this.height);
 
-    // 建立主要繪圖群組
-    this.g = this.svg.append('g')
-        .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+        // 建立主要繪圖群組
+        this.g = this.svg.append('g')
+            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
-    // 建立座標軸群組
-    this.xAxisG = this.g.append('g')
-        .attr('transform', `translate(0,${this.innerHeight})`);
-    this.yAxisG = this.g.append('g');
-}
+        // 建立座標軸群組
+        this.xAxisG = this.g.append('g')
+            .attr('transform', `translate(0,${this.innerHeight})`);
+        this.yAxisG = this.g.append('g');
+    }
 
     async loadData() {
     try {
@@ -107,6 +108,7 @@ class EnergyVisualization {
 
         this.processData();
         this.initialized = true;
+        this.lineChart = new LineChart('#chart-line', this.yearConsumption);
         this.update(this.currentYear);
 
     } catch (error) {
@@ -138,6 +140,32 @@ class EnergyVisualization {
                 return energyData;
             });
         });
+
+        // 將數據組織成適合折線圖的格式
+        this.yearConsumption = Object.entries(this.yearData).map(([year, countries]) => {
+            // 初始化能源數據
+            const energyTotals = {};
+            Object.values(ENERGY_TYPES).flat().forEach(type => {
+                energyTotals[type] = 0;
+            });
+            
+            // 計算總和
+            let totalConsumption = 0;
+            countries.forEach(country => {
+                totalConsumption += country.total;
+                Object.values(ENERGY_TYPES).flat().forEach(type => {
+                    energyTotals[type] += country[type] || 0;
+                });
+            });
+
+            // 返回需要的格式
+            return {
+                year: parseInt(year),
+                total: totalConsumption,
+                energy: energyTotals
+            };
+        }).sort((a, b) => a.year - b.year); // 按年份排序
+        console.log('yearConsumption: ', this.yearConsumption);
     }
 
     initControls() {
