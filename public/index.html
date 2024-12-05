@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Energy Distribution (1965-2023)</title>
+    <link rel="stylesheet" href="css/main.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Global Energy Distribution by Country (1965-2023)</h1>
+            <p class="description">Visualization of energy consumption patterns across major countries</p>
+        </header>
+
+        <main>
+            <!-- 主要視覺化區域 -->
+            <div class="visualization-container">
+                <div id="chart-line"></div>
+                <div id="chart-area"></div>
+
+                <!-- 時間控制區 -->
+                <div class="controls">
+                    <div class="time-control">
+                        <button id="play-button" class="control-button">
+                            <span class="play-icon">▶</span>
+                            <span class="pause-icon hidden">⏸</span>
+                        </button>
+                        <input
+                            type="range"
+                            id="year-slider"
+                            min="1965"
+                            max="2023"
+                            value="2023"
+                            step="1"
+                        >
+                        <span id="year-label">2023</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 圖例 -->
+            <div class="legend-container">
+                <div id="legend"></div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="source">Data source: Our World in Data - Energy Consumption Dataset</div>
+        </footer>
+    </div>
+
+    <!-- 工具提示 -->
+    <div id="tooltip" class="tooltip" style="display: none;"></div>
+
+    <!-- JavaScript -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="js/constants.js" type="module"></script>
+    <script src="js/main.js" type="module"></script>
+</body>
+</html>
