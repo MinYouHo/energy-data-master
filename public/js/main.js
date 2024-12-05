@@ -1,5 +1,6 @@
 import { COLORS, ENERGY_TYPES, ENERGY_LABELS, CHART_CONFIG } from './constants.js';
 import LineChart from './line_chart.js';
+import MapChart from './map.js';
 
 class EnergyVisualization {
     constructor(container) {
@@ -109,6 +110,7 @@ class EnergyVisualization {
         this.processData();
         this.initialized = true;
         this.lineChart = new LineChart('#chart-line', this.yearConsumption);
+        this.mapChart = new MapChart('#chart-map', this.data);
         this.update(this.currentYear);
 
     } catch (error) {
