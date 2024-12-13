@@ -1,30 +1,37 @@
-class MapChart {
-  constructor(container, data) {
-      this.container = container;
-      this.energyData = data;
+import { COLORS, ENERGY_TYPES, ENERGY_LABELS, CHART_CONFIG } from './constants.js';
 
-      // 設置地圖尺寸
-      this.margin = { top: 10, right: 30, bottom: 30, left: 60 };
-      this.width = 1000 - this.margin.left - this.margin.right;
-      this.height = 600 - this.margin.top - this.margin.bottom;
-      
-      this.yearIndex = this.energyData.length - 1;  // 從最新年份開始
-      this.years = this.energyData.map(d => d.year);
-      
-      // 初始化
-      this.initSVG();
-      this.initColorScale();
-      this.initTooltip();
-      this.loadGeoData();
+class MapChart {
+    constructor(container, data) {
+        this.container = container;
+        this.energyData = data;
+
+        // 設置地圖尺寸
+        //   this.width = 1000 - this.margin.left - this.margin.right;
+        //   this.height = 600 - this.margin.top - this.margin.bottom;
+        this.width = 1000;
+        this.height = 600;
+        this.margin = CHART_CONFIG.margin;
+        this.innerWidth = this.width - this.margin.left - this.margin.right;
+        this.innerHeight = this.height - this.margin.top - this.margin.bottom;
+        
+        this.yearIndex = this.energyData.length - 1;  // 從最新年份開始
+        this.years = this.energyData.map(d => d.year);
+        
+        // 初始化
+        this.initSVG();
+        this.initColorScale();
+        this.initTooltip();
+        this.loadGeoData();
   }
 
-  initSVG() {
-      this.svg = d3.select(this.container)
-          .append('svg')
-          .attr('width', this.width + this.margin.left + this.margin.right)
-          .attr('height', this.height + this.margin.top + this.margin.bottom)
-          .append('g')
-          .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+    initSVG() {
+        this.svg = d3.select(this.container)
+            .append('svg')
+            .attr('width', this.width)
+            .attr('height', this.height);
+
+        this.g = this.svg.append('g')
+            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
   }
 
   initColorScale() {
@@ -47,7 +54,7 @@ class MapChart {
 
   async loadGeoData() {
       try {
-          const response = await fetch('countries.geojson');
+          const response = await fetch('data/countries.geojson');
           this.geoData = await response.json();
           this.drawMap(this.years[this.yearIndex]);
           this.createLegend();
