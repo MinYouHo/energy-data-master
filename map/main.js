@@ -56,7 +56,7 @@ function drawMap(year) {
       }
     })
     .attr("class", "country")
-    .on("mouseover", function (d) {
+    .on("mouseover", function (event, d) {
       d3.select(this).attr("stroke", "black").attr("stroke-width", "0.5");
       const countryName = d.properties.ADMIN;
       const countryData = yearData.countries.find(
