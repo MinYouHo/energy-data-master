@@ -118,19 +118,27 @@ class MapChart {
     }
 
     createLegend() {
-        const legendWidth = 300;
-        const legendHeight = 20;
-        const legendRectWidth = legendWidth / this.colorScale.range().length;
+        // const legendWidth = 300;
+        const legendWidth = 30;
+        // const legendHeight = 20;
+        const legendHeight = 300;
+        // const legendRectWidth = legendWidth / this.colorScale.range().length;
+        const legendRectHeight = legendHeight / this.colorScale.range().length;
 
         const legendSvg = this.svg.append("g")
-            .attr("transform", `translate(${this.width - legendWidth - 50}, ${this.height})`);
+            // .attr("transform", `translate(${this.width - legendWidth - 50}, ${this.height})`);
+            .attr("transform", `translate(0, ${(this.height-legendHeight)/2})`);
 
         this.colorScale.range().forEach((color, i) => {
             legendSvg.append("rect")
-                .attr("x", i * legendRectWidth)
-                .attr("y", 0)
-                .attr("width", legendRectWidth)
-                .attr("height", legendHeight)
+                // .attr("x", i * legendRectWidth)
+                .attr("x", 0)
+                // .attr("y", 0)
+                .attr("y", legendHeight - (i+1) * legendRectHeight)
+                // .attr("width", legendRectWidth)
+                .attr("width", legendWidth)
+                // .attr("height", legendHeight)
+                .attr("height", legendRectHeight)
                 .style("fill", color)
                 .style("stroke", "black")
                 .attr("class", "legend-rect")
@@ -140,16 +148,18 @@ class MapChart {
             // Add legend labels
             if (i === 0) {
                 legendSvg.append("text")
-                    .attr("x", 0)
-                    .attr("y", legendHeight + 15)
+                    .attr("x", legendWidth + 5)
+                    .attr("y", legendHeight)
                     .attr("font-size", "10px")
                     .attr("text-anchor", "start")
                     .text("0");
             }
             
             legendSvg.append("text")
-                .attr("x", i * legendRectWidth + legendRectWidth - 10)
-                .attr("y", legendHeight + 15)
+                // .attr("x", i * legendRectWidth + legendRectWidth - 10)
+                .attr("x", legendWidth + 5)
+                // .attr("y", legendHeight + 15)
+                .attr("y", legendHeight - (i+1)*legendRectHeight+5)
                 .attr("font-size", "10px")
                 .attr("text-anchor", "start")
                 .text(`${Math.round(this.colorScale.domain()[i])}`);

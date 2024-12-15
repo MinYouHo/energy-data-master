@@ -87,7 +87,7 @@ h1 {
 /* Slider styles */
 input[type="range"] {
     flex: 1;
-    -webkit-appearance: none;
+    appearance: none;
     height: 5px;
     background: #ddd;
     border-radius: 5px;
