@@ -1,6 +1,7 @@
 import { COLORS, ENERGY_TYPES, ENERGY_LABELS, CHART_CONFIG } from './constants.js';
-import LineChart from './line_chart.js';
+import LineChart from './line.js';
 import MapChart from './map.js';
+import StackChart from './stack.js'
 
 class EnergyVisualization {
     constructor(container) {
@@ -13,116 +14,85 @@ class EnergyVisualization {
         this.timer = null;
         this.initialized = false;
 
-        // 初始化 SVG
-        this.initSVG();
-        // 載入資料
         this.loadData();
-        // 初始化控制項
         this.initControls();
-    }
-
-    initSVG() {
-        // 設置圖表尺寸
-        this.width = 1000;
-        this.height = 600;
-        this.margin = CHART_CONFIG.margin;
-        this.innerWidth = this.width - this.margin.left - this.margin.right;
-        this.innerHeight = this.height - this.margin.top - this.margin.bottom;
-
-        // 建立 SVG
-        this.svg = d3.select('#chart-area')
-            .append('svg')
-            .attr('width', this.width)
-            .attr('height', this.height);
-
-        // 建立主要繪圖群組
-        this.g = this.svg.append('g')
-            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
-
-        // 建立座標軸群組
-        this.xAxisG = this.g.append('g')
-            .attr('transform', `translate(0,${this.innerHeight})`);
-        this.yAxisG = this.g.append('g');
+        this.update(this.currentYear);
     }
 
     async loadData() {
-    try {
-        console.log('開始載入資料...');
-        const response = await fetch('data/energy_data.json');
+        try {
+            const response = await fetch('data/energy_data.json');
+        {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        // 檢查回應狀態
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+            this.data = await response.json();
 
-        this.data = await response.json();
+            // 數據檢查
+            console.log('=== 數據載入分析 ===');
+            console.log('1. 時間範圍：', {
+                起始年份: this.data[0].year,
+                結束年份: this.data[this.data.length - 1].year,
+                總年數: this.data.length
+            });
 
-        // 詳細的數據檢查
-        console.log('=== 數據載入分析 ===');
-        console.log('1. 時間範圍：', {
-            起始年份: this.data[0].year,
-            結束年份: this.data[this.data.length - 1].year,
-            總年數: this.data.length
-        });
+            const latestYear = this.data[this.data.length - 1];
+            const earliestYear = this.data[0];
 
-        // 取得最新年份數據
-        const latestYear = this.data[this.data.length - 1];
-        const earliestYear = this.data[0];
-
-        // 製作國家分析報告
-        const countryAnalysis = {
-            起始年份國家數: earliestYear.countries.length,
-            結束年份國家數: latestYear.countries.length,
-            主要國家列表: latestYear.countries
-                .sort((a, b) => b.total - a.total) // 依總能源消耗排序
-                .slice(0, 10)  // 取前10名
-                .map(country => ({
-                    國家: country.name,
-                    總能源消耗: country.total,
-                    能源佔比: ((country.total / latestYear.countries.reduce((sum, c) => sum + c.total, 0)) * 100).toFixed(2) + '%'
-                }))
-        };
-
-        console.log('2. 國家統計分析：', countryAnalysis);
-
-        // 能源類型分析
-        if (latestYear.countries.length > 0) {
-            const sampleCountry = latestYear.countries[0];
-            console.log('3. 數據結構示例（最大能源消耗國家）：', {
-                國家: sampleCountry.name,
-                總能源: sampleCountry.total,
-                能源類型分布: Object.entries(sampleCountry.energy)
-                    .map(([type, value]) => ({
-                        類型: type,
-                        數值: value,
-                        佔比: ((value / sampleCountry.total) * 100).toFixed(2) + '%'
+            // 製作國家分析報告
+            const countryAnalysis = {
+                起始年份國家數: earliestYear.countries.length,
+                結束年份國家數: latestYear.countries.length,
+                主要國家列表: latestYear.countries
+                    .sort((a, b) => b.total - a.total) // 依總能源消耗排序
+                    .slice(0, 10)  // 取前10名
+                    .map(country => ({
+                        國家: country.name,
+                        總能源消耗: country.total,
+                        能源佔比: ((country.total / latestYear.countries.reduce((sum, c) => sum + c.total, 0)) * 100).toFixed(2) + '%'
                     }))
+            };
+            console.log('2. 國家統計分析：', countryAnalysis);
+
+            // 能源類型分析
+            if (latestYear.countries.length > 0) {
+                const sampleCountry = latestYear.countries[0];
+                console.log('3. 數據結構示例（最大能源消耗國家）：', {
+                    國家: sampleCountry.name,
+                    總能源: sampleCountry.total,
+                    能源類型分布: Object.entries(sampleCountry.energy)
+                        .map(([type, value]) => ({
+                            類型: type,
+                            數值: value,
+                            佔比: ((value / sampleCountry.total) * 100).toFixed(2) + '%'
+                        }))
+                });
+            }
+
+            // 數據完整性檢查
+            console.log('4. 數據完整性檢查：', {
+                總數據年份數: this.data.length,
+                平均每年國家數: (this.data.reduce((sum, year) => sum + year.countries.length, 0) / this.data.length).toFixed(2),
+                數據是否完整: this.data.every(year => year.countries.length > 0) ? '是' : '否'
             });
         }
+            await this.processData();
+            this.initialized = true;
 
-        // 數據完整性檢查
-        console.log('4. 數據完整性檢查：', {
-            總數據年份數: this.data.length,
-            平均每年國家數: (this.data.reduce((sum, year) => sum + year.countries.length, 0) / this.data.length).toFixed(2),
-            數據是否完整: this.data.every(year => year.countries.length > 0) ? '是' : '否'
-        });
-
-        this.processData();
-        this.initialized = true;
-        this.lineChart = new LineChart('#chart-line', this.yearConsumption);
-        this.mapChart = new MapChart('#chart-map', this.data);
-        this.update(this.currentYear);
-
-    } catch (error) {
-        console.error('數據載入錯誤:', error);
-        // 提供更具體的錯誤信息
-        console.error('詳細錯誤資訊:', {
-            錯誤類型: error.name,
-            錯誤信息: error.message,
-            錯誤堆疊: error.stack
-        });
+            this.stackChart = new StackChart('#chart-area', this.yearData[this.currentYear]);
+            this.lineChart = new LineChart('#chart-line', this.yearConsumption);
+            this.mapChart = await new MapChart('#chart-map', this.data);
+        } catch (error) {
+            console.error('數據載入錯誤:', error);
+            // 提供更具體的錯誤信息
+            console.error('詳細錯誤資訊:', {
+                錯誤類型: error.name,
+                錯誤信息: error.message,
+                錯誤堆疊: error.stack
+            });
+        }
     }
-}
 
     processData() {
         // 將數據組織成適合堆疊圖的格式
@@ -166,8 +136,15 @@ class EnergyVisualization {
                 total: totalConsumption,
                 energy: energyTotals
             };
-        }).sort((a, b) => a.year - b.year); // 按年份排序
+        })
+        .sort((a, b) => a.year - b.year); // 按年份排序
         console.log('yearConsumption: ', this.yearConsumption);
+    }
+    
+    update(year) {
+        if (!this.yearData || !this.yearData[year]) return;
+        this.stackChart.update(this.yearData[year]);
+        this.mapChart.updateYear(year);
     }
 
     initControls() {
@@ -215,7 +192,7 @@ class EnergyVisualization {
                 this.slider.value = this.currentYear;
                 this.yearLabel.textContent = this.currentYear;
                 this.update(this.currentYear);
-            }, 1000);
+            }, 2000);
         }
     }
 
@@ -226,65 +203,6 @@ class EnergyVisualization {
         }
     }
 
-    update(year) {
-        if (!this.yearData || !this.yearData[year]) return;
-
-        const data = this.yearData[year].sort((a, b) => b.total - a.total);
-
-        // 更新比例尺
-        const xScale = d3.scaleLinear()
-            .domain([0, d3.max(data, d => d.total)])
-            .range([0, this.innerWidth]);
-
-        const yScale = d3.scaleBand()
-            .domain(data.map(d => d.country))
-            .range([0, this.innerHeight])
-            .padding(0.1);
-
-        // 準備堆疊數據
-        const stack = d3.stack()
-            .keys(Object.values(ENERGY_TYPES).flat())
-            .order(d3.stackOrderNone)
-            .offset(d3.stackOffsetNone);
-
-        const stackedData = stack(data);
-
-        // 更新軸
-        const xAxis = d3.axisBottom(xScale)
-            .ticks(5)
-            .tickFormat(d => d3.format(',')(d) + ' TWh');
-        const yAxis = d3.axisLeft(yScale);
-
-        this.xAxisG.transition().duration(750).call(xAxis);
-        this.yAxisG.transition().duration(750).call(yAxis);
-
-        // 更新堆疊條
-        const energyGroups = this.g.selectAll('.energy-group')
-            .data(stackedData)
-            .join('g')
-            .attr('class', 'energy-group')
-            .style('fill', (d, i) => {
-                const energyType = d.key;
-                for (const [category, types] of Object.entries(ENERGY_TYPES)) {
-                    if (types.includes(energyType)) {
-                        return COLORS[category][energyType];
-                    }
-                }
-            });
-
-        energyGroups.selectAll('rect')
-            .data(d => d)
-            .join('rect')
-            .transition()
-            .duration(750)
-            .attr('y', d => yScale(d.data.country))
-            .attr('x', d => xScale(d[0]))
-            .attr('width', d => xScale(d[1]) - xScale(d[0]))
-            .attr('height', yScale.bandwidth());
-
-        // 更新圖例
-        this.updateLegend();
-    }
 
     updateLegend() {
         const legendContainer = document.getElementById('legend');
@@ -310,7 +228,6 @@ class EnergyVisualization {
     }
 }
 
-// 當文檔載入完成後初始化視覺化
 document.addEventListener('DOMContentLoaded', () => {
-    new EnergyVisualization('#chart-area');
+    new EnergyVisualization('#visualization-container');
 });

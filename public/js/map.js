@@ -6,8 +6,6 @@ class MapChart {
         this.energyData = data;
 
         // 設置地圖尺寸
-        //   this.width = 1000 - this.margin.left - this.margin.right;
-        //   this.height = 600 - this.margin.top - this.margin.bottom;
         this.width = 1000;
         this.height = 600;
         this.margin = CHART_CONFIG.margin;
@@ -21,7 +19,7 @@ class MapChart {
         this.initSVG();
         this.initColorScale();
         this.initTooltip();
-        this.loadGeoData();
+        return this.loadGeoData().then(()=> this);
     }
 
     initSVG() {
@@ -118,26 +116,18 @@ class MapChart {
     }
 
     createLegend() {
-        // const legendWidth = 300;
         const legendWidth = 30;
-        // const legendHeight = 20;
         const legendHeight = 300;
-        // const legendRectWidth = legendWidth / this.colorScale.range().length;
         const legendRectHeight = legendHeight / this.colorScale.range().length;
 
         const legendSvg = this.svg.append("g")
-            // .attr("transform", `translate(${this.width - legendWidth - 50}, ${this.height})`);
             .attr("transform", `translate(0, ${(this.height-legendHeight)/2})`);
 
         this.colorScale.range().forEach((color, i) => {
             legendSvg.append("rect")
-                // .attr("x", i * legendRectWidth)
                 .attr("x", 0)
-                // .attr("y", 0)
                 .attr("y", legendHeight - (i+1) * legendRectHeight)
-                // .attr("width", legendRectWidth)
                 .attr("width", legendWidth)
-                // .attr("height", legendHeight)
                 .attr("height", legendRectHeight)
                 .style("fill", color)
                 .style("stroke", "black")
@@ -156,9 +146,7 @@ class MapChart {
             }
             
             legendSvg.append("text")
-                // .attr("x", i * legendRectWidth + legendRectWidth - 10)
                 .attr("x", legendWidth + 5)
-                // .attr("y", legendHeight + 15)
                 .attr("y", legendHeight - (i+1)*legendRectHeight+5)
                 .attr("font-size", "10px")
                 .attr("text-anchor", "start")
@@ -191,6 +179,10 @@ class MapChart {
     }
 
     updateYear(year) {
+        if (!this.geoData) {
+            console.warn('Geographic data not yet loaded');
+            return;
+        }
         this.yearIndex = this.years.indexOf(year);
         this.drawMap(year);
     }
