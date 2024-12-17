@@ -1,8 +1,8 @@
-import { COLORS, ENERGY_TYPES, ENERGY_LABELS, CHART_CONFIG } from './constants.js';
+// import { COLORS, ENERGY_TYPES, ENERGY_LABELS, CHART_CONFIG } from './constants.js';
+import DataProcessor from './data-processor.js';
+import StackChart from './stack.js';
 import LineChart from './line.js';
 import MapChart from './map.js';
-import StackChart from './stack.js';
-import DataProcessor from './data-processor.js';
 
 class EnergyVisualization {
     constructor(container) {

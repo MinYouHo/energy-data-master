@@ -99,7 +99,7 @@ class MapChart {
         const tooltipContent = countryData 
             ? `<strong>${countryName}</strong><br>Per capita energy consumption: ${countryData.total} Mtoe`
             : `<strong>${countryName}</strong><br>No Data`;
-        console.log('Tooltip content:', tooltipContent);
+        // console.log('Tooltip content:', tooltipContent);
 
         this.tooltip
             .style("visibility", "visible")
