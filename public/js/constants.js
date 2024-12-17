@@ -38,10 +38,10 @@ export const ENERGY_LABELS = {
 // 圖表配置
 export const CHART_CONFIG = {
     margin: {
-        top: 30,
-        right: 30,
-        bottom: 40,
-        left: 90
+        top: 20,
+        right: 90,
+        bottom: 20,
+        left: 50
     },
     bar: {
         padding: 0.1,

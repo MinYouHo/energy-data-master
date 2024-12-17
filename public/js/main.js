@@ -66,22 +66,18 @@ class EnergyVisualization {
         // 確保組件已完全初始化
         if (!this.isInitialized) return;
 
-        // 如果有選取範圍，使用範圍的平均值；否則使用當前年份的資料
-        const yearData = this.selectedYearRange 
-            ? this.dataProcessor.getYearData(this.selectedYearRange)
-            : this.dataProcessor.getYearData(this.currentYear);
+        // 決定要使用的時間範圍或單一年份
+        const timeRange = this.selectedYearRange || this.currentYear;
 
         // 更新堆疊圖
         if (this.stackChart) {
+            const yearData = this.dataProcessor.getYearData(timeRange);
             this.stackChart.update(yearData);
         }
 
-        // 更新地圖（使用範圍的結束年份或當前年份）
+        // 更新地圖（現在也使用時間範圍來計算平均值）
         if (this.mapChart) {
-            const mapYear = this.selectedYearRange 
-                ? this.selectedYearRange[1] 
-                : this.currentYear;
-            this.mapChart.updateYear(mapYear);
+            this.mapChart.updateYear(timeRange);
         }
     }
     

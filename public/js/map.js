@@ -56,8 +56,44 @@ class MapChart {
         }
     }
 
-    drawMap(year) {
-        const yearData = this.energyData.find(d => d.year === year);
+    drawMap(yearInput) {
+        let mapData;
+        
+        // 判斷輸入是單一年份還是年份範圍
+        if (Array.isArray(yearInput)) {
+            // 計算年份範圍內的平均資料
+            const [startYear, endYear] = yearInput;
+            const yearsInRange = this.energyData.filter(d => 
+                d.year >= startYear && d.year <= endYear
+            );
+            
+            // 計算每個國家在這段期間的平均值
+            const countryAverages = {};
+            yearsInRange.forEach(yearData => {
+                yearData.countries.forEach(country => {
+                    if (!countryAverages[country.name]) {
+                        countryAverages[country.name] = {
+                            total: 0,
+                            count: 0
+                        };
+                    }
+                    countryAverages[country.name].total += country.total;
+                    countryAverages[country.name].count += 1;
+                });
+            });
+            
+            // 創建平均資料結構
+            mapData = {
+                year: `${startYear}-${endYear} 平均`,
+                countries: Object.entries(countryAverages).map(([name, data]) => ({
+                    name,
+                    total: Number((data.total / data.count).toFixed(2))
+                }))
+            };
+        } else {
+            // 單一年份的資料
+            mapData = this.energyData.find(d => d.year === yearInput);
+        }
 
         const projection = d3.geoMercator()
             .fitExtent([[0, 0], [this.width, this.height]], this.geoData);
@@ -73,13 +109,13 @@ class MapChart {
             .attr("stroke", "white")
             .attr("fill", d => {
                 const countryName = d.properties.ADMIN;
-                const countryData = yearData.countries.find(country => 
+                const countryData = mapData.countries.find(country => 
                     country.name === countryName
                 );
                 return countryData ? this.colorScale(countryData.total) : "#ccc";
             })
             .attr("class", "country")
-            .on("mouseover", (event, d) => this.handleMouseOver(event, d, yearData))
+            .on("mouseover", (event, d) => this.handleMouseOver(event, d, mapData))
             .on("mouseout", (event) => this.handleMouseOut(event));
     }
 

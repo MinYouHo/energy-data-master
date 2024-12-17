@@ -108,6 +108,11 @@ class DataProcessor {
             return this.formatStackData(yearRange);
         }
 
+        return this.calculateAverageData(yearRange);
+    }
+
+    // 計算指定年份範圍的平均資料
+    calculateAverageData(yearRange) {
         const [startYear, endYear] = yearRange;
         
         // 取得該範圍內所有年份的資料
@@ -120,7 +125,7 @@ class DataProcessor {
             return [];
         }
 
-        // 取得所有國家的清單（使用最後一年的資料）
+        // 取得所有國家的清單（使用第一年的資料）
         const countries = this.yearData[yearsInRange[0]].map(country => country.country);
         
         // 計算每個國家在這段期間的平均能源使用量
@@ -128,41 +133,61 @@ class DataProcessor {
             // 收集該國在範圍內所有年份的資料
             const countryYearData = yearsInRange.map(year => 
                 this.yearData[year].find(c => c.country === countryName)
-            ).filter(Boolean); // 移除可能的 undefined 值
+            ).filter(Boolean);
 
-            // 如果該國在某些年份沒有資料，則跳過
             if (countryYearData.length === 0) return null;
 
             // 計算各能源類型的平均值
             const energyAverages = Object.values(ENERGY_TYPES)
                 .flat()
                 .reduce((acc, energyType) => {
-                    // 計算該能源類型的平均值
                     const average = countryYearData.reduce((sum, yearData) => 
                         sum + (yearData[energyType] || 0), 0) / countryYearData.length;
                     
                     return {
                         ...acc,
-                        [energyType]: Number(average.toFixed(2)) // 四捨五入到小數點後兩位
+                        [energyType]: Number(average.toFixed(2))
                     };
                 }, {});
 
-            // 計算總能源使用量的平均值
             const totalAverage = Number(
                 (countryYearData.reduce((sum, yearData) => 
                     sum + yearData.total, 0) / countryYearData.length).toFixed(2)
             );
 
-            // 返回該國的平均資料
             return {
                 country: countryName,
                 total: totalAverage,
                 ...energyAverages
             };
-        }).filter(Boolean); // 移除可能的 null 值
+        }).filter(Boolean);
 
-        // 根據平均總能源使用量排序
         return averageData.sort((a, b) => b.total - a.total);
+    }
+
+    // 取得地圖資料格式
+    getMapData(yearRange = null) {
+        // 如果沒有提供年份範圍，返回原始資料
+        if (!yearRange) {
+            return this.data;
+        }
+
+        const averageData = this.calculateAverageData(yearRange);
+        
+        // 轉換成地圖所需的資料格式
+        return [{
+            year: yearRange[1], // 使用範圍的結束年份作為參考年份
+            countries: averageData.map(country => ({
+                name: country.country,
+                total: country.total,
+                energy: Object.values(ENERGY_TYPES)
+                    .flat()
+                    .reduce((acc, type) => ({
+                        ...acc,
+                        [type]: country[type]
+                    }), {})
+            }))
+        }];
     }
 
     getConsumptionData() {
