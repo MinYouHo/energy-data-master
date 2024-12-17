@@ -22,7 +22,9 @@ class LineChart {
             .attr('height', this.height);
 
         this.g = this.svg.append('g')
-            .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
+            .attr('transform', `translate(${this.margin.left},${this.margin.top})`)
+            .attr('width', this.innerWidth)
+            .attr('height', this.innerHeight);
 
         this.xAxisG = this.g.append('g')
             .attr('transform', `translate(0,${this.innerHeight})`);
@@ -32,7 +34,7 @@ class LineChart {
     draw() {
         const xScale = d3.scaleLinear()
             .domain(d3.extent(this.yearConsumption, d => d.year))
-            .range([0, this.innerWidth - 100]);
+            .range([0, this.innerWidth]);
 
         const yScale = d3.scaleLinear()
             .domain([0, d3.max(this.yearConsumption, d => {
@@ -113,28 +115,72 @@ class LineChart {
     }
 
     addBrush() {
-        const xScale = d3.scaleLinear()
+        // 創建並保存 xScale 作為類別的屬性，這樣其他方法也能使用它
+        this.xScale = d3.scaleLinear()
             .domain(d3.extent(this.yearConsumption, d => d.year))
             .range([0, this.innerWidth]);
-        // 創建 brush
+    
+        // 創建 brush 實例
         const brush = d3.brushX()
             .extent([[0, 0], [this.innerWidth, this.innerHeight]])
-            .on('end', (event) => {
-                if (!event.selection) return; // 如果沒有選擇區域則返回
-                
-                // 將像素範圍轉換回年份
-                const yearRange = event.selection.map(xScale.invert);
-                const years = yearRange.map(Math.round);
-                
-                console.log('折線圖選取return: ', years);
-                // // 如果有設置回調函數，則調用它
-                // if (this.onBrushEnd) {
-                //     this.onBrushEnd(years);
-                // }
-            });
-
-        // 將 brush 添加到專門的群組中
+            .on('end', this.handleBrushEnd.bind(this));  // 使用獨立的處理函數以提高可讀性
+    
+        // 為畫布添加點擊事件處理
+        this.g.on('click', this.handleClick.bind(this));
+        
+        // 應用 brush 到畫布
         this.g.call(brush);
+        
+        // 保存 brush 實例以供後續使用
+        this.brush = brush;
+    }
+    
+    // 處理 brush 結束事件
+    handleBrushEnd(event) {
+        // 如果用戶清除了選擇
+        if (!event.selection) {
+            if (this.onBrushEnd) {
+                this.onBrushEnd(null);
+            }
+            return;
+        }
+        
+        // 計算選擇範圍對應的年份
+        const yearRange = event.selection.map(this.xScale.invert);
+        const years = yearRange.map(Math.round);
+        console.log('選取範圍：', years)
+        // 確保年份範圍的正確順序
+        const sortedYears = [Math.min(...years), Math.max(...years)];
+        
+        // 通知外部監聽器
+        if (this.onBrushEnd) {
+            this.onBrushEnd(sortedYears);
+        }
+    }
+    
+    // 處理點擊事件
+    handleClick(event) {
+        // 檢查是否為 brush 操作（避免與 brush 事件衝突）
+        if (event.defaultPrevented) return;
+        
+        // 獲取點擊位置
+        const [x] = d3.pointer(event);
+        
+        // 計算對應的年份
+        const year = Math.round(this.xScale.invert(x));
+        
+        // 如果點擊位置在有效範圍內
+        if (year >= d3.min(this.yearConsumption, d => d.year) && 
+            year <= d3.max(this.yearConsumption, d => d.year)) {
+            console.log('點選年份：', year)
+            // 清除現有的 brush 選擇
+            this.g.call(this.brush.clear);
+            
+            // 通知外部監聽器（傳遞單一年份）
+            if (this.onBrushEnd) {
+                this.onBrushEnd([year, year]);
+            }
+        }
     }
 }
 
