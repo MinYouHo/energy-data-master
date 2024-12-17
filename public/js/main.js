@@ -1,24 +1,26 @@
 import { COLORS, ENERGY_TYPES, ENERGY_LABELS, CHART_CONFIG } from './constants.js';
 import LineChart from './line.js';
 import MapChart from './map.js';
-import StackChart from './stack.js'
+import StackChart from './stack.js';
+import DataProcessor from './data-processor.js';
 
 class EnergyVisualization {
     constructor(container) {
         this.container = container;
         this.currentYear = 2023;
         this.isPlaying = false;
+        this.dataProcessor = new DataProcessor();
 
         this.initialize();
     }
 
     async initialize() {
         try {
-            // 載入數據
-            await this.loadData();
+            // 載入並處理資料
+            const { rawData, yearData, yearConsumption } = await this.dataProcessor.loadData();
             
             // 初始化視覺化組件
-            await this.initializeComponents();
+            await this.initializeComponents(rawData, yearData[this.currentYear], yearConsumption);
             
             // 初始化控制項
             this.initControls();
@@ -29,65 +31,25 @@ class EnergyVisualization {
             console.error('初始化失敗:', error);
         }
     }
-    
-    async loadData() {
-        // 載入數據
-        const response = await fetch('data/energy_data.json');
-        this.data = await response.json();
         
-        // 處理數據以供視覺化使用
-        await this.processData();
-    }
-    
-    processData() {
-        // 處理堆疊圖數據
-        this.yearData = Object.fromEntries(
-            this.data.map(yearData => [
-                yearData.year,
-                yearData.countries.map(country => ({
-                    country: country.name,
-                    total: country.total,
-                    ...Object.values(ENERGY_TYPES).flat()
-                        .reduce((acc, type) => ({
-                            ...acc,
-                            [type]: country.energy[type] || 0
-                        }), {})
-                }))
-            ])
-        );
-
-        // 處理折線圖數據
-        this.yearConsumption = Object.entries(this.yearData)
-            .map(([year, countries]) => ({
-                year: parseInt(year),
-                energy: Object.values(ENERGY_TYPES).flat()
-                    .reduce((totals, type) => ({
-                        ...totals,
-                        [type]: countries.reduce((sum, country) => 
-                            sum + (country[type] || 0), 0)
-                    }), {})
-            }))
-            .sort((a, b) => a.year - b.year);
-    }
-        
-    async initializeComponents() {
+    async initializeComponents(rawData, currentYearData, yearConsumption) {
         // 依序初始化各個圖表組件
         [this.stackChart, this.lineChart, this.mapChart] = await Promise.all([
-            new StackChart('#chart-area', this.yearData[this.currentYear]),
-            new LineChart('#chart-line', this.yearConsumption),
-            new MapChart('#chart-map', this.data)
+            new StackChart('#chart-area', currentYearData),
+            new LineChart('#chart-line', yearConsumption),
+            new MapChart('#chart-map', rawData)
         ]);
     }
     
     initControls() {
-            // 初始化播放按鈕
-            this.playButton = document.getElementById('play-button');
-            this.playButton.addEventListener('click', () => this.togglePlay());
-    
-            // 初始化年份滑桿
-            this.slider = document.getElementById('year-slider');
-            this.yearLabel = document.getElementById('year-label');
-            this.slider.addEventListener('input', this.handleSliderChange.bind(this));
+        // 初始化播放按鈕
+        this.playButton = document.getElementById('play-button');
+        this.playButton.addEventListener('click', () => this.togglePlay());
+
+        // 初始化年份滑桿
+        this.slider = document.getElementById('year-slider');
+        this.yearLabel = document.getElementById('year-label');
+        this.slider.addEventListener('input', this.handleSliderChange.bind(this));
     }
 
     handleSliderChange(event) {
@@ -97,11 +59,12 @@ class EnergyVisualization {
     }
     
     update(year) {
-        if (!this.yearData?.[year]) return;
+        const yearData = this.dataProcessor.getYearData(year);
+        if (!yearData) return;
         
         // 使用 requestAnimationFrame 確保平滑更新
         requestAnimationFrame(() => {
-            this.stackChart?.update(this.yearData[year]);
+            this.stackChart?.update(yearData);
             this.mapChart?.updateYear(year);
         });
     }
