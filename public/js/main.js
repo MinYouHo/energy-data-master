@@ -9,6 +9,7 @@ class EnergyVisualization {
         this.container = container;
         this.currentYear = 2023;
         this.selectedYearRange = null;
+        this.selectedCountries = [];
         this.isPlaying = false;
         this.dataProcessor = new DataProcessor();
         this.isInitialized = false;  // 新增初始化狀態追蹤
@@ -48,6 +49,8 @@ class EnergyVisualization {
 
             // 設置折線圖的選取事件處理
             this.lineChart.onBrushEnd = this.handleTimeRangeSelect.bind(this);
+            // 地圖的選取
+            this.mapChart.onCountriesSelect = this.handleCountriesSelect.bind(this);
         } catch (error) {
             console.error('圖表初始化失敗:', error);
             throw error;  // 向上傳遞錯誤
@@ -55,10 +58,17 @@ class EnergyVisualization {
     }
     
     handleTimeRangeSelect(yearRange) {
-        // 確保組件已完全初始化
         if (!this.isInitialized) return;
         
         this.selectedYearRange = yearRange;
+        this.updateVisualizations();
+    }
+
+    handleCountriesSelect(Countries) {
+        if (!this.isInitialized) return;
+        
+        this.selectedCountries = Countries;
+        console.log('主程式接收到的國家：', this.selectedCountries);
         this.updateVisualizations();
     }
 
@@ -66,10 +76,13 @@ class EnergyVisualization {
         // 確保組件已完全初始化
         if (!this.isInitialized) return;
 
-        // 如果有選取範圍，使用範圍的平均值；否則使用當前年份的資料
+        // 沒選範圍就用當前年份的資料
         const yearData = this.selectedYearRange 
             ? this.dataProcessor.getYearData(this.selectedYearRange)
             : this.dataProcessor.getYearData(this.currentYear);
+
+        const consumptionData = this.dataProcessor.setSelectedCountries(this.selectedCountries);
+        // console.log('主程式收到的consumption:', consumptionData);
 
         // 更新堆疊圖
         if (this.stackChart) {
@@ -82,6 +95,11 @@ class EnergyVisualization {
                 ? this.selectedYearRange[1] 
                 : this.currentYear;
             this.mapChart.updateYear(mapYear);
+        }
+
+        // 更新折線圖
+        if (this.lineChart) {
+            this.lineChart.update(consumptionData);
         }
     }
     

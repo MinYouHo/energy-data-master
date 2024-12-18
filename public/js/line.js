@@ -11,11 +11,12 @@ class LineChart {
         this.innerHeight = this.height - this.margin.top - this.margin.bottom;
 
         this.initSVG();
-        this.draw();
+        this.update();  // 改為呼叫 update
         this.addBrush();
     }
 
     initSVG() {
+        // SVG 初始化代碼保持不變...
         this.svg = d3.select(this.container)
             .append('svg')
             .attr('width', this.width)
@@ -31,7 +32,19 @@ class LineChart {
         this.yAxisG = this.g.append('g');
     }
 
-    draw() {
+    update(newData) {
+        // 如果提供了新數據就更新數據
+        if (newData) {
+            this.yearConsumption = newData;
+        }
+        // console.log('NewData:', newData);
+
+        // 設定轉場
+        const t = d3.transition()
+            .duration(750)
+            .ease(d3.easeLinear);
+
+        // 更新比例尺
         const xScale = d3.scaleLinear()
             .domain(d3.extent(this.yearConsumption, d => d.year))
             .range([0, this.innerWidth]);
@@ -43,21 +56,23 @@ class LineChart {
             .nice()
             .range([this.innerHeight, 0]);
 
-        // 繪製軸
+        // 更新座標軸
         const xAxis = d3.axisBottom(xScale)
             .tickFormat(d => d.toString());
         const yAxis = d3.axisLeft(yScale)
             .tickFormat(d => d3.format(',')(d) + ' TWh');
 
-        this.xAxisG.transition().duration(750).call(xAxis);
-        this.yAxisG.transition().duration(750).call(yAxis);
+        // 使用轉場更新座標軸
+        this.xAxisG.transition(t).call(xAxis);
+        this.yAxisG.transition(t).call(yAxis);
 
-        // 繪製線條
+        // 準備線條生成器
         const lineGenerator = d3.line()
             .x(d => xScale(d.year))
             .y(d => yScale(d.value))
             .curve(d3.curveMonotoneX);
 
+        // 準備數據
         const energyTypes = Object.values(ENERGY_TYPES).flat();
         const lineData = energyTypes.map(type => ({
             type: type,
@@ -67,19 +82,23 @@ class LineChart {
             }))
         }));
 
-        // 繪製線條
+        // 更新線條
         const lines = this.g.selectAll('.line')
-            .data(lineData);
+            .data(lineData, d => d.type);  // 使用能源類型作為 key
 
+        // 處理新增的線條
         const linesEnter = lines.enter()
             .append('path')
-            .attr('class', 'line');
-
-        lines.merge(linesEnter)
-            .transition()
-            .duration(750)
-            .attr('d', d => lineGenerator(d.values))
+            .attr('class', 'line')
             .attr('fill', 'none')
+            .attr('stroke-width', 2)
+            .attr('opacity', 0)  // 初始透明度為 0
+            .attr('d', d => lineGenerator(d.values));  // 設置初始路徑
+
+        // 合併新增和更新的線條，應用轉場
+        lines.merge(linesEnter)
+            .transition(t)
+            .attr('d', d => lineGenerator(d.values))
             .attr('stroke', d => {
                 for (const [category, types] of Object.entries(ENERGY_TYPES)) {
                     if (types.includes(d.type)) {
@@ -87,23 +106,31 @@ class LineChart {
                     }
                 }
             })
-            .attr('stroke-width', 2);
+            .attr('opacity', 1);  // 最終透明度為 1
 
-        // 添加標籤
+        // 處理要移除的線條
+        lines.exit()
+            .transition(t)
+            .attr('opacity', 0)  // 淡出效果
+            .remove();
+
+        // 更新標籤
         const labels = this.g.selectAll('.line-label')
-            .data(lineData);
+            .data(lineData, d => d.type);  // 使用相同的 key
 
+        // 處理新增的標籤
         const labelsEnter = labels.enter()
             .append('text')
-            .attr('class', 'line-label');
+            .attr('class', 'line-label')
+            .attr('opacity', 0)  // 初始透明度為 0
+            .attr('dx', 5)
+            .attr('dy', '0.35em');
 
+        // 合併新增和更新的標籤，應用轉場
         labels.merge(labelsEnter)
-            .transition()
-            .duration(750)
+            .transition(t)
             .attr('x', d => xScale(this.yearConsumption[this.yearConsumption.length - 1].year))
             .attr('y', d => yScale(d.values[d.values.length - 1].value))
-            .attr('dx', 5)
-            .attr('dy', '0.35em')
             .attr('fill', d => {
                 for (const [category, types] of Object.entries(ENERGY_TYPES)) {
                     if (types.includes(d.type)) {
@@ -111,7 +138,14 @@ class LineChart {
                     }
                 }
             })
-            .text(d => ENERGY_LABELS[d.type]);
+            .text(d => ENERGY_LABELS[d.type])
+            .attr('opacity', 1);  // 最終透明度為 1
+
+        // 處理要移除的標籤
+        labels.exit()
+            .transition(t)
+            .attr('opacity', 0)  // 淡出效果
+            .remove();
     }
 
     addBrush() {

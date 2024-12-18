@@ -6,6 +6,7 @@ class DataProcessor {
         this.data = null;
         this.yearData = null;
         this.yearConsumption = null;
+        this.selectedCountries = [];
     }
 
     async loadData() {
@@ -87,19 +88,53 @@ class DataProcessor {
             });
     }
 
-    // 其他方法保持不變...
     processLineChartData() {
-        this.yearConsumption = Object.entries(this.yearData)
-            .map(([year, countries]) => ({
-                year: parseInt(year),
-                energy: Object.values(ENERGY_TYPES).flat()
-                    .reduce((totals, type) => ({
-                        ...totals,
-                        [type]: countries.reduce((sum, country) => 
-                            sum + (country[type] || 0), 0)
-                    }), {})
-            }))
-            .sort((a, b) => a.year - b.year);
+        const yearEntries = Object.entries(this.yearData);
+        
+        this.yearConsumption = yearEntries
+            .map(([year, countries]) => {
+                // 決定要處理的國家列表
+                const countriesToProcess = this.selectedCountries.length > 0
+                    ? countries.filter(country => 
+                        this.selectedCountries.includes(country.country))
+                    : countries;
+
+                // 計算該年所有能源類型的總和
+                const energyTotals = Object.values(ENERGY_TYPES)
+                    .flat()
+                    .reduce((totals, type) => {
+                        // 對選中的國家進行能源類型的總和計算
+                        const typeTotal = countriesToProcess.reduce(
+                            (sum, country) => sum + (country[type] || 0), 
+                            0
+                        );
+                        
+                        return {
+                            ...totals,
+                            [type]: Number(typeTotal.toFixed(2)) // 保留兩位小數
+                        };
+                    }, {});
+
+                // 返回該年的彙總數據
+                return {
+                    year: parseInt(year),
+                    energy: energyTotals,
+                    // 可選：添加該年的總能源消耗
+                    totalConsumption: Object.values(energyTotals)
+                        .reduce((sum, value) => sum + value, 0)
+                };
+            })
+            .sort((a, b) => a.year - b.year); // 確保按年份排序
+        // console.log('處理完的yearConsumption:', this.yearConsumption);
+
+        return this.yearConsumption;
+    }
+
+    setSelectedCountries(countries) {
+        this.selectedCountries = countries || [];
+        console.log('資料處理收到的國家：', this.selectedCountries)
+        // 當選取國家改變時，重新處理折線圖數據
+        return this.processLineChartData();
     }
 
     getYearData(yearRange) {
@@ -192,6 +227,14 @@ class DataProcessor {
 
     getConsumptionData() {
         return this.yearConsumption;
+    }
+
+    getSelectedCountries() {
+        return this.selectedCountries;
+    }
+
+    hasSelectedCountries() {
+        return this.selectedCountries.length > 0;
     }
 
     getRawData() {
