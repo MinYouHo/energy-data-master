@@ -15,13 +15,11 @@
         </header>
 
         <main>
-            <!-- 主要視覺化區域 -->
             <div class="visualization-container">
                 <div id="chart-map"></div>
                 <div id="chart-line"></div>
                 <div id="chart-area"></div>
 
-                <!-- 時間控制區 -->
                 <div class="controls">
                     <div class="time-control">
                         <button id="play-button" class="control-button">
@@ -41,7 +39,6 @@
                 </div>
             </div>
 
-            <!-- 圖例 -->
             <div class="legend-container">
                 <div id="legend"></div>
             </div>
@@ -52,12 +49,9 @@
         </footer>
     </div>
 
-    <!-- 工具提示 -->
-    <div id="tooltip" class="tooltip" style="display: none;"></div>
-
     <!-- JavaScript -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="js/constants.js" type="module"></script>
+    <script src="js/data-processor.js" type="module"></script>
     <script src="js/main.js" type="module"></script>
 </body>
 </html>

@@ -66,18 +66,22 @@ class EnergyVisualization {
         // 確保組件已完全初始化
         if (!this.isInitialized) return;
 
-        // 決定要使用的時間範圍或單一年份
-        const timeRange = this.selectedYearRange || this.currentYear;
+        // 如果有選取範圍，使用範圍的平均值；否則使用當前年份的資料
+        const yearData = this.selectedYearRange 
+            ? this.dataProcessor.getYearData(this.selectedYearRange)
+            : this.dataProcessor.getYearData(this.currentYear);
 
         // 更新堆疊圖
         if (this.stackChart) {
-            const yearData = this.dataProcessor.getYearData(timeRange);
             this.stackChart.update(yearData);
         }
 
-        // 更新地圖（現在也使用時間範圍來計算平均值）
+        // 更新地圖（使用範圍的結束年份或當前年份）
         if (this.mapChart) {
-            this.mapChart.updateYear(timeRange);
+            const mapYear = this.selectedYearRange 
+                ? this.selectedYearRange[1] 
+                : this.currentYear;
+            this.mapChart.updateYear(mapYear);
         }
     }
     
@@ -173,5 +177,16 @@ class EnergyVisualization {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    new EnergyVisualization('#visualization-container');
+    // 確保容器元素存在
+    const container = document.querySelector('.visualization-container');
+    if (!container) {
+        console.error('找不到 visualization-container 元素');
+        return;
+    }
+    
+    try {
+        new EnergyVisualization('.visualization-container');
+    } catch (error) {
+        console.error('初始化視覺化時發生錯誤:', error);
+    }
 });

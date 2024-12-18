@@ -41,7 +41,7 @@ export const CHART_CONFIG = {
         top: 20,
         right: 90,
         bottom: 20,
-        left: 50
+        left: 70
     },
     bar: {
         padding: 0.1,
