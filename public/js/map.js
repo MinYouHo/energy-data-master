@@ -8,7 +8,7 @@ class MapChart {
         this.selectedCountries = new Set(); // 追蹤選取的國家
 
         // 設置地圖尺寸
-        this.width = 1000;
+        this.width = 1100;
         this.height = 600;
         this.margin = CHART_CONFIG.margin;
         this.innerWidth = this.width - this.margin.left - this.margin.right;
@@ -189,7 +189,7 @@ class MapChart {
         const legendRectHeight = legendHeight / this.colorScale.range().length;
 
         const legendSvg = this.svg.append("g")
-            .attr("transform", `translate(0, ${(this.height-legendHeight)/2})`);
+            .attr("transform", `translate(50, ${(this.height-legendHeight)/2})`);
 
         const self = this;
         this.colorScale.range().forEach((color, i) => {

@@ -4,7 +4,7 @@ class LineChart {
     constructor(container, data) {
         this.container = container;
         this.yearConsumption = data;
-        this.width = 1000;
+        this.width = 1100;
         this.height = 600;
         this.margin = CHART_CONFIG.margin;
         this.innerWidth = this.width - this.margin.left - this.margin.right;
